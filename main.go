@@ -89,8 +89,9 @@ func main() {
 	})
 
 	for i := 1; i <= 2; i++ {
+        query := "iphone+15"
         headers := "#Language:all-languages|searchInTitleAndDescription:true"
-		url := fmt.Sprintf("https://www.2dehands.be/q/iphone+15/p/%d/%s", i, headers)
+		url := fmt.Sprintf("https://www.2dehands.be/q/%s/p/%d/%s", query, i, headers)
 		c.Visit(url)
 	}
 
