@@ -62,19 +62,15 @@ func main() {
 			return
 		}
 
-		cleanedStr := strings.ReplaceAll(product.Price, "€", "")
-		cleanedStr = strings.ReplaceAll(cleanedStr, ",", ".")
-		cleanedStr = strings.ReplaceAll(cleanedStr, ".", "")
-		cleanedStr = strings.TrimSpace(cleanedStr)
-
-		priceFloat, err := strconv.ParseFloat(cleanedStr, 64)
+		priceFloat, err := parsePrice(product.Price)
 
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
 		}
 
-		if (priceFloat / 100 < 400) {
+		if priceFloat/100 < 400 {
+			fmt.Println("Product removed: ", product.Title, " ", priceFloat/100, " EURO")
 			return
 		}
 
@@ -89,8 +85,8 @@ func main() {
 	})
 
 	for i := 1; i <= 2; i++ {
-        query := "iphone+15"
-        headers := "#Language:all-languages|searchInTitleAndDescription:true"
+		query := "iphone+15"
+		headers := "#Language:all-languages|searchInTitleAndDescription:true"
 		url := fmt.Sprintf("https://www.2dehands.be/q/%s/p/%d/%s", query, i, headers)
 		c.Visit(url)
 	}
@@ -134,4 +130,12 @@ func main() {
 	}
 
 	fmt.Println("Average price: ", ((totalSum / 100) / totalProducts))
+}
+
+func parsePrice(priceStr string) (float64, error) {
+	cleanedStr := strings.ReplaceAll(priceStr, "€", "")
+	cleanedStr = strings.ReplaceAll(cleanedStr, ",", ".")
+	cleanedStr = strings.ReplaceAll(cleanedStr, ".", "")
+	cleanedStr = strings.TrimSpace(cleanedStr)
+	return strconv.ParseFloat(cleanedStr, 64)
 }
