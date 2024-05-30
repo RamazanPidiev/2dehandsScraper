@@ -19,7 +19,11 @@ type Product struct {
 }
 
 func main() {
-	// set up scraper and slow it down to reduce detection
+
+	var totalSum float64
+	var totalProducts float64
+
+	// Set up scraper and slow it down to reduce detection
 	c := colly.NewCollector(
 		colly.AllowedDomains("2dehands.be", "www.2dehands.be"),
 	)
@@ -33,7 +37,7 @@ func main() {
 	c.OnRequest(func(r *colly.Request) {
 		// Set cookies if needed
 		// r.Headers.Set("Cookie", "name=value")
-		fmt.Println("Scraping", r.URL.String() + " ...")
+		fmt.Println("Scraping", r.URL.String()+" ...")
 	})
 
 	c.OnError(func(r *colly.Response, err error) {
@@ -54,7 +58,7 @@ func main() {
 			Price: e.ChildText("div.hz-Listing-price-extended-details p"),
 		}
 
-        if product.Price == "Bieden" {
+		if product.Price == "Bieden" {
 			return
 		}
 
@@ -70,23 +74,30 @@ func main() {
 			return
 		}
 
-		if (priceFloat / 100 < 400) { 
-            return
-        }
+		if (priceFloat / 100 < 400) {
+			return
+		}
+
+		totalSum += priceFloat
+		totalProducts++
 
 		products = append(products, product)
 	})
 
-    c.OnScraped(func(r *colly.Response) {
+	c.OnScraped(func(r *colly.Response) {
 		fmt.Println("Finished", r.Request.URL)
 	})
 
-	c.Visit("https://www.2dehands.be/q/iphone+15")
+	for i := 1; i <= 2; i++ {
+        headers := "#Language:all-languages|searchInTitleAndDescription:true"
+		url := fmt.Sprintf("https://www.2dehands.be/q/iphone+15/p/%d/%s", i, headers)
+		c.Visit(url)
+	}
 
-	// Create CSV file to insert data
-	file, err := os.Create("products.csv")
+	// Open CSV file to append data
+	file, err := os.OpenFile("products.csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("Failed to create output CSV file", err)
+		fmt.Println("Failed to open output CSV file", err)
 		return
 	}
 	defer file.Close()
@@ -94,16 +105,23 @@ func main() {
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	headers := []string{
-		"URL",
-		"Image",
-		"Name",
-		"Price",
+	// Check if file is empty to write headers
+	stat, err := file.Stat()
+	if err != nil {
+		fmt.Println("Failed to get file info", err)
+		return
 	}
 
-	writer.Write(headers)
+	if stat.Size() == 0 {
+		headers := []string{
+			"URL",
+			"Image",
+			"Name",
+			"Price",
+		}
+		writer.Write(headers)
+	}
 
-	// Write data to CSV
 	for _, product := range products {
 		record := []string{
 			product.URL,
@@ -113,4 +131,6 @@ func main() {
 		}
 		writer.Write(record)
 	}
+
+	fmt.Println("Average price: ", ((totalSum / 100) / totalProducts))
 }
