@@ -31,7 +31,7 @@ func main() {
 	c.Limit(&colly.LimitRule{
 		DomainGlob:  "*",
 		Parallelism: 1,
-		Delay:       20 * time.Second,
+		Delay:       5 * time.Second,
 	})
 
 	c.OnRequest(func(r *colly.Request) {
@@ -46,26 +46,38 @@ func main() {
 
 	var products []Product
 
-	c.OnHTML("div.hz-Listing-item-wrapper", func(e *colly.HTMLElement) {
+	c.OnHTML("li.hz-Listing.hz-Listing--list-item", func(e *colly.HTMLElement) {
 		if e.DOM.Find("span:contains('Topadvertentie'), span:contains('Topzoekertje') span:contains('Bezoek website')").Length() > 0 {
 			return
 		}
+		href := e.ChildAttr("a.hz-Link.hz-Link--block.hz-Listing-coverLink", "href")
+
+		html, err := e.DOM.Html()
+
+		if err == nil {
+
+			fmt.Println("HTML:", html)
+			fmt.Println()
+			fmt.Println()
+			fmt.Println()
+			fmt.Println("---------------------------------------------------")
+		}
 
 		product := Product{
-			URL:   "https://www.2dehands.be" + e.ChildAttr("a.hz-Link.hz-Link--block.hz-Listing-coverLink", "href"),
+			URL:   "https://www.2dehands.be" + href,
 			Image: e.ChildAttr("img", "src"),
 			Title: e.ChildText("h3.hz-Listing-title"),
 			Price: e.ChildText("div.hz-Listing-price-extended-details p"),
 		}
 
-		if product.Price == "Bieden" {
+		if product.Price == "Bieden" || product.Price == "Ruilen" {
 			return
 		}
 
-		priceFloat, err := parsePrice(product.Price)
+		priceFloat, err2 := parsePrice(product.Price)
 
-		if err != nil {
-			fmt.Println("Error:", err)
+		if err2 != nil {
+			fmt.Println("Error:", err2)
 			return
 		}
 
